@@ -59,13 +59,20 @@ class NaverAutomation {
             await this.page.evaluate((pw) => { const e=document.querySelector('#pw'); if(e){e.value=pw;e.dispatchEvent(new Event('input',{bubbles:true}));} }, password);
             await this._delay(500);
             await this.page.click('#log\\.login');
-            await this._delay(3000);
-            if (!this.page.url().includes('nidlogin')) {
-                await this._saveState();
-                await this.log('완료', `로그인 성공 - ${username}`);
-                return true;
+            await this.log('정보', '로그인 시도... 캡챠/인증 뜨면 직접 처리해주세요 (최대 60초 대기)');
+
+            // 최대 60초 동안 로그인 완료 대기
+            for (let i = 0; i < 60; i++) {
+                await this._delay(1000);
+                const url = this.page.url();
+                if (!url.includes('nidlogin') && !url.includes('nid.naver.com')) {
+                    await this._saveState();
+                    await this.log('완료', `로그인 성공 - ${username}`);
+                    return true;
+                }
             }
-            await this.log('오류', '로그인 실패');
+
+            await this.log('오류', '60초 초과 - 로그인 실패');
             return false;
         } catch (e) { await this.log('오류', `로그인 오류: ${e.message}`); return false; }
     }
