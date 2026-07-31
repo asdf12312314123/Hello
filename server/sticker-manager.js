@@ -99,13 +99,51 @@ class StickerManager {
 
             await this._delay(2000);
 
-            // 스티커팩 탭/목록 수집
+            // 스티커팩 탭/목록 수집 (다양한 셀렉터 시도)
             const packElements = await page.$$(
                 '.se-sticker-pack-item, .sticker_pack_item, ' +
-                '.se-emoticon-tab, .emoticon_tab_item'
+                '.se-emoticon-tab, .emoticon_tab_item, ' +
+                '.se-sticker-category-item, ' +
+                '[class*="sticker"][class*="pack"], ' +
+                '[class*="sticker"][class*="tab"], ' +
+                '[class*="emoticon"][class*="tab"], ' +
+                '[class*="emoticon"][class*="item"], ' +
+                '.se-panel-sticker-tab button, ' +
+                '.se-panel-sticker-category button'
             );
 
             await logFn('정보', `스티커팩 ${packElements.length}개 발견`);
+
+            // 팩을 못 찾았으면 개별 스티커라도 수집 시도
+            if (packElements.length === 0) {
+                await logFn('정보', '팩 목록 못 찾음 - 개별 스티커 직접 수집 시도...');
+                await this._delay(2000);
+
+                const allStickers = await page.$$(
+                    'img[class*="sticker"], img[class*="emoticon"], ' +
+                    '[class*="sticker"] img, [class*="emoticon"] img, ' +
+                    '.se-sticker-item img, .se-emoticon-item img'
+                );
+
+                if (allStickers.length > 0) {
+                    const stickers = [];
+                    for (let j = 0; j < Math.min(allStickers.length, 30); j++) {
+                        const src = await allStickers[j].getAttribute('src');
+                        if (src) stickers.push({ index: j, src });
+                    }
+                    packs.push({
+                        id: 'pack_default',
+                        name: '내 스티커',
+                        thumbnail: stickers[0]?.src || '',
+                        stickerCount: allStickers.length,
+                        stickers: stickers.slice(0, 10),
+                        tabIndex: 0
+                    });
+                    await logFn('완료', `스티커 ${allStickers.length}개 직접 발견!`);
+                } else {
+                    await logFn('오류', '스티커를 찾을 수 없습니다. 에디터에서 스티커 패널이 열려있는지 확인하세요.');
+                }
+            }
 
             for (let i = 0; i < packElements.length; i++) {
                 try {
