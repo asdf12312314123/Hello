@@ -18,6 +18,17 @@ if %errorlevel% neq 0 (
     exit
 )
 
+:: Git 자동 업데이트 (git 있으면)
+where git >nul 2>nul
+if %errorlevel% equ 0 (
+    if exist ".git" (
+        echo  [업데이트] 최신 버전 확인 중...
+        git pull --quiet 2>nul
+        echo  [완료] 최신 상태
+        echo.
+    )
+)
+
 :: node_modules 없으면 자동 설치
 if not exist "node_modules\playwright" (
     echo  [설치] 필요한 파일 설치 중... (최초 1회, 2~3분 소요)
