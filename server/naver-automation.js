@@ -92,12 +92,12 @@ class NaverAutomation {
     }
 
     async checkLoginStatus() {
-        try {
-            await this.page.goto('https://www.naver.com', { waitUntil: 'networkidle' });
-            await this._delay(1000);
-            const btn = await this.page.$('.link_login, .MyView-module__link_login___HpHMW');
-            return !btn;
-        } catch (e) { return false; }
+        // 저장된 세션 파일이 있으면 로그인 된 것으로 간주
+        if (fs.existsSync(STATE_FILE)) {
+            await this.log('정보', '저장된 세션 발견 - 로그인 시도 생략');
+            return true;
+        }
+        return false;
     }
 
     async openEditor() {
