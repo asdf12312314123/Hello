@@ -355,9 +355,10 @@ class NaverAutomation {
         try {
             const { StickerManager } = require('./sticker-manager');
             const sm = new StickerManager();
-            await sm.insertSticker(this.page, this.log.bind(this));
+            const logFn = async (level, message) => { await this.logManager.add({ level, message }); };
+            await sm.insertSticker(this.page, logFn);
         } catch (e) {
-            await this.log('오류', `이모티콘 삽입 실패: ${e.message}`);
+            await this.logManager.add({ level: '오류', message: `이모티콘 삽입 실패: ${e.message}` });
         }
     }
 
