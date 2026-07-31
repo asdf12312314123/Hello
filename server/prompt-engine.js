@@ -149,13 +149,49 @@ class PromptEngine {
                 prompt = this._buildGenericPrompt(memoData, toneInstruction, styleDesc, min_length, max_length);
         }
 
-        // 서식 마킹 가이드 + 섹션 구조 + 서식 규칙 삽입
+        // 서식 마킹 가이드 + 섹션 구조 + 서식 규칙 + 글쓰기 원칙 삽입
         const styleRules = styleRuleManager.buildPromptRules(category);
+        const writingPrinciples = this._getWritingPrinciples();
         prompt += '\n' + sectionStructure;
+        prompt += '\n' + writingPrinciples;
         prompt += '\n' + styleRules;
         prompt += '\n' + formattingGuide;
 
         return prompt;
+    }
+
+    /**
+     * ★ 글쓰기 핵심 원칙 - AI브리핑에 안 밀리는 경험 기반 글쓰기
+     */
+    _getWritingPrinciples() {
+        return `
+## 글쓰기 핵심 원칙 (매우 중요!)
+
+### 1. 구체적인 숫자를 넣어라
+- ❌ "점심때 갔는데 사람 많았다"
+- ✅ "평일 1시 30분에 갔는데 테이블 10개 중 8개가 차 있었고, 2시 전까지는 웨이팅 생길 가능성이 있어 보였다"
+- ❌ "가성비 좋았다"
+- ✅ "2인 기준 3만 2천원에 파스타 2개 + 에이드 2잔, 이 동네에서 이 가격이면 진짜 착하다"
+
+**시간, 숫자, 비율, 금액**이 들어가야 글이 살아남. 모든 문장에서 가능하면 수치를 넣어라.
+
+### 2. AI가 못 쓰는 글을 써라
+AI브리핑은 정보 정리는 잘하지만, "내가 직접 해본 경험"은 못 쓴다.
+- ❌ 단순 정보 나열 (OO 뜻, OO 방법, OO 차이)
+- ✅ "내가 직접 가봤는데", "써봤는데", "해봤는데" 느낌이 확실히 나야 함
+- 내 감정, 내 판단, 내 비교가 들어가야 AI와 차별됨
+
+### 3. 흐린 표현 금지
+- ❌ "맛있었다", "좋았다", "괜찮았다", "추천한다"
+- ✅ 왜 맛있는지, 뭐가 좋은지, 어떤 점이 괜찮은지 구체적으로
+- "면이 쫄깃해서 좋았다" → "면이 알덴테 수준으로 쫄깃한데 소스가 잘 배어서, 크림소스인데도 느끼하지 않았다"
+
+### 4. 시간 흐름을 넣어라
+- 언제 갔는지, 몇 시에 도착했는지, 얼마나 기다렸는지, 몇 시에 나왔는지
+- 이 흐름이 있으면 "진짜 갔다 온 사람"이라는 게 느껴짐
+
+이 원칙들을 반드시 지켜서 작성해주세요.
+`;
     }
 
     _buildFoodPrompt(data, toneDesc, styleDesc, minLen, maxLen) {
