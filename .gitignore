@@ -1,0 +1,9 @@
+node_modules/
+data/
+logs/
+photos/*.jpg
+photos/*.png
+photos/*.gif
+photos/*.webp
+dist/
+*.log

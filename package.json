@@ -1,0 +1,45 @@
+{
+  "name": "naver-blog-auto",
+  "version": "1.0.0",
+  "description": "N자동화 - 네이버 블로그 자동화 대시보드",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "electron": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "postinstall": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0"
+  },
+  "build": {
+    "appId": "com.nauto.blog",
+    "productName": "N자동화",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "server/**/*",
+      "frontend/**/*",
+      "photos/**/*",
+      "data/**/*",
+      "electron-main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "N자동화"
+    }
+  }
+}
