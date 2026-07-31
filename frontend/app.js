@@ -423,13 +423,19 @@ function getAutomationSettingsForm() {
 // ===== ★ 핵심: 자동화 실행 =====
 function getRunAutomationForm() {
     return `
-        <div class="form-group"><label>글 제목</label><input type="text" id="runTitle" placeholder="블로그 글 제목"></div>
-        <div class="form-group"><label>글 내용</label><textarea id="runContent" placeholder="AI가 생성한 글을 붙여넣기" style="min-height:200px"></textarea></div>
-        <div class="form-group"><label>네이버 지도 첨부할 장소 (쉼표 구분)</label><input type="text" id="runMapPlaces" placeholder="예: 성수 파스타집, 강남역 카페"></div>
-        <div class="form-group"><label>카테고리</label><input type="text" id="runCategory" value="${config.naver?.category||''}" placeholder="카테고리"></div>
-        <div class="form-group"><label>태그 (쉼표 구분)</label><input type="text" id="runTags" placeholder="태그1, 태그2"></div>
-        <button class="btn-primary" onclick="runAutomation()">🚀 자동화 실행 (네이버 블로그에 글 작성)</button>
-        <p class="hint" style="margin-top:8px">Playwright가 네이버 블로그 에디터를 열고 → 제목/본문 입력 → 네이버 지도 첨부 → 임시저장합니다</p>
+        <div class="form-group">
+            <label>AI가 생성한 글 붙여넣기</label>
+            <textarea id="runFullText" placeholder="AI가 생성한 글을 여기에 통째로 붙여넣으세요.
+
+제목: ...
+본문...
+태그: ...
+
+자동으로 제목/본문/태그/지도/이모티콘/서식을 인식합니다." style="min-height:320px"></textarea>
+        </div>
+        <div id="parsePreview" style="margin-bottom:16px"></div>
+        <button class="btn-primary" onclick="runAutomation()">자동화 실행</button>
+        <p class="hint" style="margin-top:10px">붙여넣으면 자동 인식: 제목 / 본문 서식 / 태그 / [네이버지도] / [이모티콘] / [사진]</p>
     `;
 }
 
@@ -491,20 +497,22 @@ async function saveAutomationSettings() {
 }
 
 async function runAutomation() {
-    const title = document.getElementById('runTitle').value;
-    const content = document.getElementById('runContent').value;
-    if (!title || !content) return alert('제목과 내용을 입력하세요');
+    const fullText = document.getElementById('runFullText').value;
+    if (!fullText.trim()) return alert('글을 붙여넣으세요');
 
-    const mapPlaces = document.getElementById('runMapPlaces').value.split(',').map(s => s.trim()).filter(s => s);
-    const tags = document.getElementById('runTags').value.split(',').map(s => s.trim()).filter(s => s);
+    // 자동 파싱
+    const parsed = parseFullText(fullText);
 
-    addLogEntry({ level: '정보', message: `자동화 시작 - ${title}` });
-    if (mapPlaces.length > 0) addLogEntry({ level: '정보', message: `네이버 지도 첨부: ${mapPlaces.join(', ')}` });
+    addLogEntry({ level: '정보', message: `자동화 시작 - 제목: ${parsed.title}` });
+    if (parsed.mapPlaces.length > 0) addLogEntry({ level: '정보', message: `지도: ${parsed.mapPlaces.join(', ')}` });
+    if (parsed.tags.length > 0) addLogEntry({ level: '정보', message: `태그: ${parsed.tags.join(', ')}` });
 
     const result = await apiCall('/api/automation/run', 'POST', {
-        title, content,
-        category: document.getElementById('runCategory').value,
-        tags, mapPlaces
+        title: parsed.title,
+        content: parsed.content,
+        category: config.naver?.category || '',
+        tags: parsed.tags,
+        mapPlaces: parsed.mapPlaces
     });
 
     if (result?.status === 'ok') {
@@ -512,6 +520,58 @@ async function runAutomation() {
     } else {
         addLogEntry({ level: '오류', message: `실패: ${result?.error || '알 수 없는 오류'}` });
     }
+}
+
+/**
+ * AI 생성 글 전체를 파싱하여 제목/본문/태그/지도 분리
+ */
+function parseFullText(text) {
+    let title = '';
+    let content = '';
+    let tags = [];
+    let mapPlaces = [];
+
+    const lines = text.split('\n');
+    const contentLines = [];
+    let foundTitle = false;
+
+    for (const line of lines) {
+        // 제목 인식: "제목: ..." 또는 첫 줄에 # 이 있으면
+        if (!foundTitle && line.match(/^제목[:：]\s*(.+)/)) {
+            title = line.replace(/^제목[:：]\s*/, '').trim();
+            foundTitle = true;
+            continue;
+        }
+
+        // 태그 인식: "태그: ..." 마지막 줄
+        if (line.match(/^태그[:：]\s*(.+)/)) {
+            const tagStr = line.replace(/^태그[:：]\s*/, '');
+            tags = tagStr.split(/[,，、#]/).map(t => t.trim().replace(/^#/, '')).filter(t => t);
+            continue;
+        }
+
+        // 구분선 "---" 스킵 (제목/본문/태그 구분용)
+        if (line.trim() === '---') continue;
+
+        // 네이버 지도 마커에서 장소명 추출
+        const mapMatch = line.match(/\[네이버지도[:：]\s*(.+?)\]/);
+        if (mapMatch) {
+            mapPlaces.push(mapMatch[1]);
+        }
+
+        contentLines.push(line);
+    }
+
+    content = contentLines.join('\n').trim();
+
+    // 제목 못 찾았으면 첫 줄 사용
+    if (!title && content) {
+        const firstLine = content.split('\n')[0].replace(/^#+\s*/, '').trim();
+        title = firstLine;
+        content = content.split('\n').slice(1).join('\n').trim();
+    }
+
+    return { title, content, tags, mapPlaces };
 }
 
 // ===== 유틸 =====
