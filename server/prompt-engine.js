@@ -6,10 +6,12 @@
 const { ToneManager } = require('./tone-manager');
 const { FormatParser } = require('./format-parser');
 const { SectionManager } = require('./section-manager');
+const { StyleRuleManager } = require('./style-rules');
 
 const toneManager = new ToneManager();
 const formatParser = new FormatParser();
 const sectionManager = new SectionManager();
+const styleRuleManager = new StyleRuleManager();
 
 const TONE_TEMPLATES = {
     '친근한': '마치 친한 친구에게 이야기하듯이 편안하고 친근한 말투로',
@@ -147,8 +149,10 @@ class PromptEngine {
                 prompt = this._buildGenericPrompt(memoData, toneInstruction, styleDesc, min_length, max_length);
         }
 
-        // 서식 마킹 가이드 + 섹션 구조 삽입
+        // 서식 마킹 가이드 + 섹션 구조 + 서식 규칙 삽입
+        const styleRules = styleRuleManager.buildPromptRules(category);
         prompt += '\n' + sectionStructure;
+        prompt += '\n' + styleRules;
         prompt += '\n' + formattingGuide;
 
         return prompt;

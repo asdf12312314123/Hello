@@ -154,23 +154,139 @@ function getBlogCategoryForm() {
     `;
 }
 
-// ===== 폼: 프롬프트 설정 =====
+// ===== 폼: 프롬프트 설정 (말투 + 서식 규칙 포함) =====
 function getPromptSettingsForm() {
     const p = config.prompt || {};
-    const tones = ['친근한', '전문적', '유머러스', '감성적', '리뷰형', '정보전달형'];
+    return `
+        <div class="settings-tabs">
+            <button class="cat-tab active" onclick="showSettingsTab('basic', this)">기본 설정</button>
+            <button class="cat-tab" onclick="showSettingsTab('tone', this)">말투 관리</button>
+            <button class="cat-tab" onclick="showSettingsTab('style', this)">서식 규칙</button>
+        </div>
+        <div id="settingsTabContent">${getBasicSettingsTab(p)}</div>
+    `;
+}
+
+function showSettingsTab(tab, btn) {
+    btn.parentElement.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const p = config.prompt || {};
+    switch(tab) {
+        case 'basic': document.getElementById('settingsTabContent').innerHTML = getBasicSettingsTab(p); break;
+        case 'tone': document.getElementById('settingsTabContent').innerHTML = getToneTabContent(); break;
+        case 'style': document.getElementById('settingsTabContent').innerHTML = getStyleTabContent(); loadStyleRules(); break;
+    }
+}
+
+function getBasicSettingsTab(p) {
+    const tones = Object.entries(allTones).map(([id, t]) => `<option value="${id}" ${p.toneId === id ? 'selected' : ''}>${t.name}</option>`).join('');
     const styles = ['정보전달형', '리뷰형', '일상형', '가이드형', '비교분석형', '트렌드형'];
     return `
-        <div class="form-row">
-            <div class="form-group"><label>톤/말투</label><select id="promptTone">${tones.map(t => `<option ${p.tone === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-            <div class="form-group"><label>스타일</label><select id="promptStyle">${styles.map(s => `<option ${p.style === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="form-group" style="margin-top:16px">
+            <label>기본 말투</label>
+            <select id="promptToneId">${tones}</select>
+        </div>
+        <div class="form-group">
+            <label>기본 스타일</label>
+            <select id="promptStyle">${styles.map(s => `<option ${p.style === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
         </div>
         <div class="form-row">
             <div class="form-group"><label>최소 글자수</label><input type="number" id="promptMinLen" value="${p.min_length || 1500}"></div>
             <div class="form-group"><label>최대 글자수</label><input type="number" id="promptMaxLen" value="${p.max_length || 3000}"></div>
         </div>
-        <div class="form-group"><label>추가 지시사항</label><textarea id="promptCustom" placeholder="추가 지시...">${p.custom_instructions || ''}</textarea></div>
         <button class="btn-primary" onclick="savePromptSettings()">저장</button>
     `;
+}
+
+function getToneTabContent() {
+    const tones = allTones;
+    const list = Object.entries(tones).map(([id, t]) => `
+        <div class="tone-item">
+            <div class="tone-info">
+                <strong>${t.name}</strong>
+                <p class="tone-example">"${(t.example || '').slice(0, 50)}..."</p>
+            </div>
+            ${id.startsWith('custom_') ? `<button class="btn-small" onclick="deleteCustomTone('${id}')">삭제</button>` : '<span class="hint">프리셋</span>'}
+        </div>
+    `).join('');
+
+    return `
+        <div class="tone-list" style="margin-top:16px">${list}</div>
+        <hr style="border-color:var(--border);margin:20px 0">
+        <h4>내 말투 추가</h4>
+        <div class="form-group"><label>말투 이름</label><input type="text" id="newToneName" placeholder="예: 내 말투"></div>
+        <div class="form-group"><label>예시 글 (이 스타일로 AI가 따라함)</label><textarea id="newToneExample" placeholder="내가 실제로 쓴 블로그 글 일부를 붙여넣으세요"></textarea></div>
+        <button class="btn-primary" onclick="addCustomTone()">말투 추가</button>
+    `;
+}
+
+function getStyleTabContent() {
+    const categories = Object.keys(categoryFields);
+    return `
+        <div class="category-tabs" style="margin-top:16px">
+            ${categories.map((cat, i) => `<button class="cat-tab ${i === 0 ? 'active' : ''}" onclick="loadStyleRulesForCat('${cat}', this)">${getCatEmoji(cat)} ${cat}</button>`).join('')}
+        </div>
+        <div id="styleRulesList" style="margin-top:16px"></div>
+        <hr style="border-color:var(--border);margin:20px 0">
+        <h4>규칙 추가</h4>
+        <div class="form-group"><label>대상 (어떤 정보?)</label><input type="text" id="newRuleTarget" placeholder="예: 가게명, 가격, 추천메뉴..."></div>
+        <div class="form-group"><label>적용할 서식 (복수 선택)</label>
+            <div class="checkbox-group" id="newRuleFormats"></div>
+        </div>
+        <button class="btn-primary" onclick="addStyleRule()">규칙 추가</button>
+    `;
+}
+
+async function loadStyleRules() {
+    const cats = Object.keys(categoryFields);
+    if (cats.length > 0) loadStyleRulesForCat(cats[0], null);
+    // 서식 옵션 로드
+    const options = await apiCall('/api/style-rules/options');
+    if (options) {
+        document.getElementById('newRuleFormats').innerHTML = Object.entries(options).map(([id, name]) =>
+            `<label><input type="checkbox" value="${id}" class="ruleFormatCheck"> ${name}</label>`
+        ).join('');
+    }
+}
+
+async function loadStyleRulesForCat(cat, btn) {
+    if (btn) { btn.parentElement.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); }
+    const rules = await apiCall('/api/style-rules') || {};
+    const catRules = rules[cat] || [];
+    document.getElementById('styleRulesList').innerHTML = catRules.length === 0
+        ? '<p class="hint">규칙 없음</p>'
+        : catRules.map((r, i) => `
+            <div class="tone-item">
+                <div class="tone-info">
+                    <strong>${r.target}</strong>
+                    <p class="hint">${r.formats.map(f => f).join(' + ')}</p>
+                </div>
+                <button class="btn-small" onclick="removeStyleRule('${cat}', ${i})">×</button>
+            </div>
+        `).join('');
+    document.getElementById('styleRulesList').dataset.category = cat;
+}
+
+async function addStyleRule() {
+    const cat = document.getElementById('styleRulesList')?.dataset.category;
+    if (!cat) return alert('카테고리를 선택하세요');
+    const target = document.getElementById('newRuleTarget').value;
+    if (!target) return alert('대상을 입력하세요');
+    const formats = Array.from(document.querySelectorAll('.ruleFormatCheck:checked')).map(el => el.value);
+    if (formats.length === 0) return alert('서식을 선택하세요');
+
+    const rules = (await apiCall('/api/style-rules') || {})[cat] || [];
+    rules.push({ target, formats, example: '' });
+    await apiCall(`/api/style-rules/${encodeURIComponent(cat)}`, 'POST', { rules });
+    loadStyleRulesForCat(cat, null);
+    document.getElementById('newRuleTarget').value = '';
+}
+
+async function removeStyleRule(cat, index) {
+    const rules = (await apiCall('/api/style-rules') || {})[cat] || [];
+    rules.splice(index, 1);
+    await apiCall(`/api/style-rules/${encodeURIComponent(cat)}`, 'POST', { rules });
+    loadStyleRulesForCat(cat, null);
 }
 
 // ===== ★ 핵심: 카테고리별 메모 입력 폼 =====
@@ -345,11 +461,10 @@ async function saveBlogCategory() {
 
 async function savePromptSettings() {
     await apiCall('/api/config/prompt', 'POST', {
-        tone: document.getElementById('promptTone').value,
+        toneId: document.getElementById('promptToneId').value,
         style: document.getElementById('promptStyle').value,
         min_length: parseInt(document.getElementById('promptMinLen').value),
         max_length: parseInt(document.getElementById('promptMaxLen').value),
-        custom_instructions: document.getElementById('promptCustom').value,
         include_subheadings: true, include_conclusion: true, seo_keywords: []
     });
     await loadConfig(); closeModal();

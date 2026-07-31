@@ -15,6 +15,7 @@ const { TopicManager } = require('./topic-manager');
 const { ToneManager } = require('./tone-manager');
 const { SectionManager } = require('./section-manager');
 const { StickerManager } = require('./sticker-manager');
+const { StyleRuleManager } = require('./style-rules');
 
 const PORT = 8000;
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
@@ -27,6 +28,7 @@ const topicManager = new TopicManager();
 const toneManager = new ToneManager();
 const sectionManager = new SectionManager();
 const stickerManager = new StickerManager();
+const styleRuleManager = new StyleRuleManager();
 
 // MIME 타입
 const MIME_TYPES = {
@@ -187,6 +189,20 @@ async function handleAPI(req, res, pathname) {
         else if (pathname.startsWith('/api/tones/custom/') && method === 'DELETE') {
             const id = pathname.split('/').pop();
             toneManager.removeCustomTone(id);
+            result = { status: 'ok' };
+        }
+        // ★ 서식 규칙 API
+        else if (pathname === '/api/style-rules' && method === 'GET') {
+            result = styleRuleManager.getAllRules();
+        }
+        else if (pathname === '/api/style-rules/options' && method === 'GET') {
+            result = styleRuleManager.getFormatOptions();
+        }
+        else if (pathname.startsWith('/api/style-rules/') && method === 'POST') {
+            const cat = decodeURIComponent(pathname.split('/api/style-rules/')[1]);
+            const data = JSON.parse(body);
+            styleRuleManager.updateRules(cat, data.rules);
+            await logManager.add({ level: '완료', message: `[${cat}] 서식 규칙 저장` });
             result = { status: 'ok' };
         }
         // ★ 스티커 관리 API
