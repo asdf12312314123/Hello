@@ -137,9 +137,10 @@ function getNaverAccountForm() {
     return `
         <div class="form-group"><label>네이버 아이디</label><input type="text" id="naverId" value="${n.username || ''}" placeholder="네이버 아이디"></div>
         <div class="form-group"><label>비밀번호</label><input type="password" id="naverPw" value="${n.password || ''}" placeholder="비밀번호"></div>
+        <div class="form-group"><label>블로그 ID</label><input type="text" id="blogId" value="${n.blog_id || ''}" placeholder="blog.naver.com/여기"></div>
+        <div class="form-group"><label>카테고리</label><input type="text" id="blogCategory" value="${n.category || ''}" placeholder="발행할 카테고리명"></div>
         <p class="hint">※ 로컬에만 저장됩니다</p>
         <button class="btn-primary" onclick="saveNaverAccount()">저장</button>
-        <br><br><button class="btn-secondary" style="width:100%" onclick="testLogin()">로그인 테스트</button>
     `;
 }
 
@@ -321,8 +322,8 @@ async function saveNaverAccount() {
     await apiCall('/api/config/naver', 'POST', {
         username: document.getElementById('naverId').value,
         password: document.getElementById('naverPw').value,
-        blog_id: config.naver?.blog_id || '',
-        category: config.naver?.category || ''
+        blog_id: document.getElementById('blogId').value,
+        category: document.getElementById('blogCategory').value
     });
     await loadConfig(); closeModal();
 }

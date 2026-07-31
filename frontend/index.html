@@ -23,7 +23,7 @@
         </header>
 
         <div class="description">
-            1~3번 설정 후, <strong>4번에서 메모 입력</strong> → 프롬프트 생성 → AI에 복붙 → 결과를 <strong>6번에서 자동화 실행</strong>
+            설정 후 <strong>4번 메모 입력</strong> → 프롬프트 복사 → AI에 붙여넣기 → <strong>6번 자동화 실행</strong>
         </div>
 
         <div class="main-grid">
@@ -32,70 +32,48 @@
                 <div class="card-number">1</div>
                 <div class="card-content">
                     <h3>네이버 계정</h3>
-                    <p>네이버 로그인 설정</p>
+                    <p>로그인 설정 (블로그 ID 포함)</p>
                     <div class="card-status" id="naverStatus">미설정</div>
                 </div>
                 <div class="card-arrow">&rsaquo;</div>
             </div>
 
-            <!-- 2. 블로그·카테고리 -->
-            <div class="card" onclick="openModal('blogCategory')">
+            <!-- 2. 프롬프트 설정 -->
+            <div class="card" onclick="openModal('promptSettings')">
                 <div class="card-number">2</div>
                 <div class="card-content">
-                    <h3>블로그 · 카테고리</h3>
-                    <p>블로그 ID, 카테고리 설정</p>
-                    <div class="card-status" id="blogStatus">미설정</div>
-                </div>
-                <div class="card-arrow">&rsaquo;</div>
-            </div>
-
-            <!-- 3. 프롬프트 설정 -->
-            <div class="card" onclick="openModal('promptSettings')">
-                <div class="card-number">3</div>
-                <div class="card-content">
                     <h3>프롬프트 설정</h3>
-                    <p>톤/스타일/글자수 설정</p>
+                    <p>톤/스타일/글자수 기본값</p>
                     <div class="card-status" id="promptStatus">미설정</div>
                 </div>
                 <div class="card-arrow">&rsaquo;</div>
             </div>
 
-            <!-- 4. 섹션 구조 설정 -->
+            <!-- 3. 섹션 구조 설정 -->
             <div class="card" onclick="openModal('sectionSettings')">
-                <div class="card-number">4</div>
+                <div class="card-number">3</div>
                 <div class="card-content">
                     <h3>섹션 구조 설정</h3>
-                    <p>카테고리별 글 순서 (방문이유→지도→분위기→메뉴...)</p>
+                    <p>카테고리별 글 순서 (방문이유→지도→분위기→...)</p>
                     <div class="card-status" id="sectionStatus">기본값</div>
                 </div>
                 <div class="card-arrow">&rsaquo;</div>
             </div>
 
-            <!-- 5. ★ 메모 입력 (핵심) -->
+            <!-- 4. ★ 메모 입력 -->
             <div class="card card-primary" onclick="openModal('memoInput')">
-                <div class="card-number">5</div>
+                <div class="card-number">4</div>
                 <div class="card-content">
                     <h3>메모 입력 → 프롬프트 생성</h3>
-                    <p>맛집/여행/일상/정보 카테고리별 메모 → AI 프롬프트</p>
+                    <p>맛집/여행/일상/정보 메모 → AI 프롬프트</p>
                     <div class="card-status" id="memoStatus">대기</div>
                 </div>
                 <div class="card-arrow">&rsaquo;</div>
             </div>
 
-            <!-- 6. 발행 시간 -->
-            <div class="card" onclick="openModal('scheduleSettings')">
-                <div class="card-number">6</div>
-                <div class="card-content">
-                    <h3>발행 시간</h3>
-                    <p>예약 발행 스케줄 설정</p>
-                    <div class="card-status" id="scheduleStatus">미설정</div>
-                </div>
-                <div class="card-arrow">&rsaquo;</div>
-            </div>
-
-            <!-- 7. 스티커/자동화 설정 -->
+            <!-- 5. 스티커 설정 -->
             <div class="card" onclick="openModal('stickerManager')">
-                <div class="card-number">7</div>
+                <div class="card-number">5</div>
                 <div class="card-content">
                     <h3>스티커 설정</h3>
                     <p>보유 스티커팩 불러오기 + 사용할 팩 선택</p>
@@ -104,23 +82,12 @@
                 <div class="card-arrow">&rsaquo;</div>
             </div>
 
-            <!-- 8. 자동화 설정 -->
-            <div class="card" onclick="openModal('automationSettings')">
-                <div class="card-number">8</div>
-                <div class="card-content">
-                    <h3>자동화 설정</h3>
-                    <p>브라우저 옵션, 저장/발행 설정</p>
-                    <div class="card-status" id="autoStatus">미설정</div>
-                </div>
-                <div class="card-arrow">&rsaquo;</div>
-            </div>
-
-            <!-- 9. ★ 자동화 실행 -->
+            <!-- 6. ★ 자동화 실행 -->
             <div class="card card-primary" onclick="openModal('runAutomation')">
-                <div class="card-number">9</div>
+                <div class="card-number">6</div>
                 <div class="card-content">
                     <h3>글 만들기 · 자동화 실행</h3>
-                    <p>제목+본문 입력 → 네이버 블로그 자동 작성 + 지도 첨부 + 저장</p>
+                    <p>제목+본문 → 네이버 블로그 자동 작성 + 서식 + 지도 + 저장</p>
                     <div class="card-status" id="runStatus">대기</div>
                 </div>
                 <div class="card-arrow">&rsaquo;</div>
