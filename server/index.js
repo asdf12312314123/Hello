@@ -305,7 +305,7 @@ async function fetchStickers() {
 
         const { StickerManager } = require('./sticker-manager');
         const sm = new StickerManager();
-        const packs = await sm.fetchStickersFromEditor(automation.page, logManager.add.bind(logManager));
+        const packs = await sm.fetchStickersFromEditor(automation.page, (level, message) => logManager.add({ level, message }));
 
         return { status: 'ok', packs };
     } catch (e) {
