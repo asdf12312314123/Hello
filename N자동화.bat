@@ -1,13 +1,12 @@
 @echo off
 chcp 65001 >nul 2>nul
+cd /d "%~dp0"
 title N자동화 v1.0.0
 color 0A
 echo.
 echo  ============================================
 echo    N자동화 v1.0.0 - 네이버 블로그 자동화
 echo  ============================================
-echo.
-echo  서버 시작 중...
 echo.
 
 :: Node.js 확인
@@ -19,11 +18,14 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Playwright 확인
+:: node_modules 없으면 자동 설치
 if not exist "node_modules\playwright" (
-    echo  [설치] Playwright 설치 중... (최초 1회)
-    call npm install playwright
+    echo  [설치] 필요한 파일 설치 중... (최초 1회, 2~3분 소요)
+    echo.
+    call npm install
     call npx playwright install chromium
+    echo.
+    echo  [완료] 설치 끝!
     echo.
 )
 
@@ -34,8 +36,6 @@ echo.
 echo  ============================================
 echo.
 
-:: 2초 후 브라우저 열기
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000"
 
-:: 서버 실행
 node server\index.js
