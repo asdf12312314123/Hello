@@ -49,30 +49,44 @@ class NaverAutomation {
     // ===== 로그인 =====
     async login() {
         const { username, password } = this.naver;
-        if (!username || !password) { await this.log('오류', '계정 미설정'); return false; }
-        await this.log('정보', '네이버 로그인...');
+        await this.log('정보', '네이버 로그인 페이지 열기...');
         try {
             await this.page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'networkidle' });
             await this._delay(1000);
-            await this.page.evaluate((id) => { const e=document.querySelector('#id'); if(e){e.value=id;e.dispatchEvent(new Event('input',{bubbles:true}));} }, username);
-            await this._delay(500);
-            await this.page.evaluate((pw) => { const e=document.querySelector('#pw'); if(e){e.value=pw;e.dispatchEvent(new Event('input',{bubbles:true}));} }, password);
-            await this._delay(500);
-            await this.page.click('#log\\.login');
-            await this.log('정보', '로그인 시도... 캡챠/인증 뜨면 직접 처리해주세요 (최대 60초 대기)');
 
-            // 최대 60초 동안 로그인 완료 대기
-            for (let i = 0; i < 60; i++) {
-                await this._delay(1000);
-                const url = this.page.url();
-                if (!url.includes('nidlogin') && !url.includes('nid.naver.com')) {
-                    await this._saveState();
-                    await this.log('완료', `로그인 성공 - ${username}`);
-                    return true;
+            // 아이디/비번 있으면 자동 입력 시도
+            if (username && password) {
+                await this.log('정보', '자동 입력 시도...');
+                try {
+                    await this.page.evaluate((id) => { const e=document.querySelector('#id'); if(e){e.value=id;e.dispatchEvent(new Event('input',{bubbles:true}));} }, username);
+                    await this._delay(300);
+                    await this.page.evaluate((pw) => { const e=document.querySelector('#pw'); if(e){e.value=pw;e.dispatchEvent(new Event('input',{bubbles:true}));} }, password);
+                    await this._delay(300);
+                    await this.page.click('#log\\.login');
+                } catch (e) {
+                    // 자동 입력 실패해도 괜찮음 - 수동으로 하면 됨
                 }
             }
 
-            await this.log('오류', '60초 초과 - 로그인 실패');
+            await this.log('정보', '★ 브라우저에서 직접 로그인해주세요! (최대 120초 대기)');
+
+            // 최대 120초 동안 로그인 완료 대기
+            for (let i = 0; i < 120; i++) {
+                await this._delay(1000);
+                const url = this.page.url();
+                // 로그인 성공하면 네이버 메인이나 다른 페이지로 이동됨
+                if (!url.includes('nidlogin') && !url.includes('nid.naver.com')) {
+                    await this._saveState();
+                    await this.log('완료', '로그인 성공! 세션 저장됨 (다음부터 자동 로그인)');
+                    return true;
+                }
+                // 10초마다 안내
+                if (i > 0 && i % 10 === 0) {
+                    await this.log('정보', `로그인 대기 중... (${i}초/${120}초)`);
+                }
+            }
+
+            await this.log('오류', '120초 초과 - 로그인 실패. 다시 시도해주세요.');
             return false;
         } catch (e) { await this.log('오류', `로그인 오류: ${e.message}`); return false; }
     }
