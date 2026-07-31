@@ -50,3 +50,7 @@ echo.
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000"
 
 node server\index.js
+
+echo.
+echo  [종료됨] 에러가 있으면 위 메시지를 확인하세요.
+pause
