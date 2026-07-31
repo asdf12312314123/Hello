@@ -48,41 +48,26 @@ class NaverAutomation {
 
     // ===== 로그인 =====
     async login() {
-        const { username, password } = this.naver;
         await this.log('정보', '네이버 로그인 페이지 열기...');
         try {
             await this.page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'networkidle' });
-            await this._delay(1000);
-
-            // 아이디/비번 있으면 자동 입력 시도
-            if (username && password) {
-                await this.log('정보', '자동 입력 시도...');
-                try {
-                    await this.page.evaluate((id) => { const e=document.querySelector('#id'); if(e){e.value=id;e.dispatchEvent(new Event('input',{bubbles:true}));} }, username);
-                    await this._delay(300);
-                    await this.page.evaluate((pw) => { const e=document.querySelector('#pw'); if(e){e.value=pw;e.dispatchEvent(new Event('input',{bubbles:true}));} }, password);
-                    await this._delay(300);
-                    await this.page.click('#log\\.login');
-                } catch (e) {
-                    // 자동 입력 실패해도 괜찮음 - 수동으로 하면 됨
-                }
-            }
+            await this._delay(2000);
 
             await this.log('정보', '★ 브라우저에서 직접 로그인해주세요! (최대 120초 대기)');
 
             // 최대 120초 동안 로그인 완료 대기
             for (let i = 0; i < 120; i++) {
                 await this._delay(1000);
-                const url = this.page.url();
-                // 로그인 성공하면 네이버 메인이나 다른 페이지로 이동됨
-                if (!url.includes('nidlogin') && !url.includes('nid.naver.com')) {
-                    await this._saveState();
-                    await this.log('완료', '로그인 성공! 세션 저장됨 (다음부터 자동 로그인)');
-                    return true;
-                }
-                // 10초마다 안내
-                if (i > 0 && i % 10 === 0) {
-                    await this.log('정보', `로그인 대기 중... (${i}초/${120}초)`);
+                try {
+                    const url = this.page.url();
+                    if (!url.includes('nidlogin') && !url.includes('nid.naver.com')) {
+                        await this._saveState();
+                        await this.log('완료', '로그인 성공! 세션 저장됨 (다음부터 자동 로그인)');
+                        return true;
+                    }
+                } catch (e) { /* 페이지 이동 중 무시 */ }
+                if (i > 0 && i % 15 === 0) {
+                    await this.log('정보', `로그인 대기 중... (${i}초/120초) - 브라우저에서 로그인하세요`);
                 }
             }
 
@@ -92,10 +77,22 @@ class NaverAutomation {
     }
 
     async checkLoginStatus() {
-        // 저장된 세션 파일이 있으면 로그인 된 것으로 간주
+        // 저장된 세션으로 네이버 접속 시도
         if (fs.existsSync(STATE_FILE)) {
-            await this.log('정보', '저장된 세션 발견 - 로그인 시도 생략');
-            return true;
+            try {
+                await this.log('정보', '저장된 세션으로 로그인 확인 중...');
+                await this.page.goto('https://blog.naver.com', { waitUntil: 'networkidle', timeout: 10000 });
+                await this._delay(2000);
+                const url = this.page.url();
+                // 로그인 페이지로 리다이렉트 안 됐으면 성공
+                if (!url.includes('nidlogin') && !url.includes('nid.naver.com/nidlogin')) {
+                    await this.log('완료', '세션 유효 - 로그인 상태');
+                    return true;
+                }
+            } catch (e) { /* 세션 만료 */ }
+            // 세션 만료됨 - 파일 삭제
+            await this.log('정보', '세션 만료됨 - 다시 로그인 필요');
+            try { fs.unlinkSync(STATE_FILE); } catch(e) {}
         }
         return false;
     }
